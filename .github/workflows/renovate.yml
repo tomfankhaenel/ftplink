@@ -34,4 +34,4 @@ jobs:
           file: src/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: false
-          tags: ${{ GITHUB_REF_NAME }}
+          tags: ${{ env.GITHUB_REF_NAME }}
