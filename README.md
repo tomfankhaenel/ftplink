@@ -7,7 +7,7 @@ All the cameras are connected via a raspberry to the internet. Your prefered way
 
 # What ftplink does
 - setup a ftp server in python
-- uploads of any picture/video will be forward to a specific telegram group using a bot token
+- upload of any picture/video will be forward to a specific telegram group using a bot token
 
 
 ## local docker example:
@@ -24,8 +24,8 @@ services:
     image: tomfankhaenel/ftplink:latest
     restart: always
     environment:
-      - bot_token="xxx:xxx"
-      - group_chat_id="-123"
+      - bot_token=xxx:xxx
+      - group_chat_id=-123
     ports:
       - "21:2121"
       - "60000-60010:60000-60010"
