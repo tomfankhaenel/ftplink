@@ -1,0 +1,2 @@
+pyftpdlib==1.5.7
+python-telegram-bot==20.6
