@@ -1,9 +1,10 @@
 name: Verify renovate offers
 
 on:
-  push:
-    tags:
-      - renovate/*
+  pull_request:
+    branches:    
+      - main
+      - 'renovate/**'
 
 jobs:
   build:
