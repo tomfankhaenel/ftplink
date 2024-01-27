@@ -1,5 +1,3 @@
-![](logo.png)
-
 # Origin
 Imagine you have multiple surveillance cameras and want to know when something is moving or happening. 
 The cameras only offer builtin push notification for an app you dont want to use and the only other options are smtp and ftp uploads.
@@ -20,17 +18,12 @@ docker run -it --rm -e bot_token="xxx:xxx" -e group_chat_id="-123" -p21:2121 -p6
 version: '3'
 
 services:
-  pyftp:
-    image: tomfankhaenel/ftplink:latest
-    restart: always
-    environment:
-      - bot_token=xxx:xxx
-      - group_chat_id=-123
-    ports:
-      - "21:2121"
-      - "60000-60010:60000-60010"
-    volumes:
-      - ftp:/app/ftp
-volumes:
-  ftp:
+  awsdomain:
+  image: tomfankhaenel/route53-dyndns:1.0.0
+  restart: always
+  environment:
+    - ROUTE53_ZONE=$ZONEID
+    - ROUTE53_RECORDS=record.,*.record2.
+    - AWS_ACCESS_KEY_ID=$KEY
+    - AWS_SECRET_ACCESS_KEY=$SECRET
 ```
