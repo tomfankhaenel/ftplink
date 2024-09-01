@@ -1,2 +1,2 @@
 pyftpdlib==1.5.10
-python-telegram-bot==21.4
+python-telegram-bot==21.5
