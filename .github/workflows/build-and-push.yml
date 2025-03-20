@@ -26,7 +26,7 @@ jobs:
         with:
           images: tomfankhaenel/ftplink
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5.4.0
+        uses: docker/build-push-action@v6.15.0
         with:
           context: src
           file: src/Dockerfile
