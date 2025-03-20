@@ -5,6 +5,10 @@
       {
         "matchUpdateTypes": ["minor"],
         "automerge": true
-      }
+      },
+    {
+      "matchUpdateTypes": ["patch"],
+      "enabled": false
+    }
     ]
 }
