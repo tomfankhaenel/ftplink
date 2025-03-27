@@ -1,4 +1,4 @@
-name: Verify renovate offers
+name: Build and push feature release
 
 on:
   pull_request:
