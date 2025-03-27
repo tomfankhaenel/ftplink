@@ -26,6 +26,14 @@ def send_to_telegram(file_path):
         elif file_path.lower().endswith(('.mp4')):
             asyncio.run(telegram.Bot(bot_token).sendVideo(chat_id=group_chat_id, video=file_path)) # Send video via Telegram
             os.remove(file_path)  # Delete the file after successful send
+    except RetryAfter as e:
+        print(f"Flood control exceeded. Retrying in {e.retry_after} seconds...")
+        await asyncio.sleep(e.retry_after)
+        await send_to_telegram(file_path)  # Retry after delay
+    except TimedOut:
+        print("Telegram request timed out. Retrying in 10 seconds...")
+        await asyncio.sleep(10)
+        await send_to_telegram(file_path)
     except Exception as e:
         print(f"Error sending file to Telegram, marking file for resend: {e}")
         base, extension = os.path.splitext(file_path)
