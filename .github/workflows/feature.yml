@@ -2,7 +2,8 @@ name: Build and push feature release
 
 on:
   pull_request:
-    branches:    
+    branches:
+      - main
       - 'feature/**'
 
 jobs:
