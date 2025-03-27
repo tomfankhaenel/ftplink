@@ -5,13 +5,13 @@ import asyncio
 import telegram
 import os
 import time
+from telegram.error import RetryAfter, TimedOut
 
 
 bot_token = os.getenv("bot_token", "bot_token does not exist")
 group_chat_id = os.getenv("group_chat_id", "group_chat_id does not exist")
 homedir = os.getenv("homedir", "/app/ftp")
 resenddir = os.getenv("resenddir", "/app/ftp/resend")
-
 
 class Telegram(FTPHandler):
     def on_file_received(self, file_path): # only if ftp server receives a file we will trigger a potential telegram notification
@@ -26,6 +26,14 @@ def send_to_telegram(file_path):
         elif file_path.lower().endswith(('.mp4')):
             asyncio.run(telegram.Bot(bot_token).sendVideo(chat_id=group_chat_id, video=file_path)) # Send video via Telegram
             os.remove(file_path)  # Delete the file after successful send
+    except RetryAfter as e:
+        print(f"Flood control exceeded. Retrying in {e.retry_after} seconds...")
+        time.sleep(e.retry_after)
+        send_to_telegram(file_path)  # Retry after delay
+    except TimedOut:
+        print("Telegram request timed out. Retrying in 10 seconds...")
+        time.sleep(10)
+        send_to_telegram(file_path)
     except Exception as e:
         print(f"Error sending file to Telegram, marking file for resend: {e}")
         base, extension = os.path.splitext(file_path)
