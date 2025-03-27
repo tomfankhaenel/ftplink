@@ -1,9 +1,8 @@
 name: Verify renovate offers
 
 on:
-  pull_request:
-    branches:    
-      - main
+  push:
+    branches:
       - 'renovate/**'
 
 jobs:
