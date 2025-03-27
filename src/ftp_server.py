@@ -12,7 +12,6 @@ group_chat_id = os.getenv("group_chat_id", "group_chat_id does not exist")
 homedir = os.getenv("homedir", "/app/ftp")
 resenddir = os.getenv("resenddir", "/app/ftp/resend")
 
-
 class Telegram(FTPHandler):
     def on_file_received(self, file_path): # only if ftp server receives a file we will trigger a potential telegram notification
         send_to_telegram(file_path)
