@@ -5,6 +5,7 @@ import asyncio
 import telegram
 import os
 import time
+from telegram.error import RetryAfter, TimedOut
 
 
 bot_token = os.getenv("bot_token", "bot_token does not exist")
@@ -17,7 +18,7 @@ class Telegram(FTPHandler):
         send_to_telegram(file_path)
 
 
-def send_to_telegram(file_path):
+async def send_to_telegram(file_path):
     try:
         if file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.gif')):
             asyncio.run(telegram.Bot(bot_token).sendPhoto(chat_id=group_chat_id, photo=file_path)) # Send photo via Telegram
