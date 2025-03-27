@@ -1,10 +1,9 @@
 name: Build and push feature release
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
-      - 'feature/**'
+      - 'feature/*'
 
 jobs:
   push_to_registry:
