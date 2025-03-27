@@ -18,7 +18,7 @@ class Telegram(FTPHandler):
         send_to_telegram(file_path)
 
 
-async def send_to_telegram(file_path):
+def send_to_telegram(file_path):
     try:
         if file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.gif')):
             asyncio.run(telegram.Bot(bot_token).sendPhoto(chat_id=group_chat_id, photo=file_path)) # Send photo via Telegram
@@ -28,12 +28,12 @@ async def send_to_telegram(file_path):
             os.remove(file_path)  # Delete the file after successful send
     except RetryAfter as e:
         print(f"Flood control exceeded. Retrying in {e.retry_after} seconds...")
-        await asyncio.sleep(e.retry_after)
-        await send_to_telegram(file_path)  # Retry after delay
+        time.sleep(e.retry_after)
+        send_to_telegram(file_path)  # Retry after delay
     except TimedOut:
         print("Telegram request timed out. Retrying in 10 seconds...")
-        await asyncio.sleep(10)
-        await send_to_telegram(file_path)
+        time.sleep(10)
+        send_to_telegram(file_path)
     except Exception as e:
         print(f"Error sending file to Telegram, marking file for resend: {e}")
         base, extension = os.path.splitext(file_path)
