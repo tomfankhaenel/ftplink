@@ -6,8 +6,11 @@ import telegram
 import os
 import time
 from telegram.error import RetryAfter, TimedOut
+import requests
+import json
 
-
+detection_endpoint = os.getenv("detection_endpoint", "")
+allowed_objects = set(o.strip().lower() for o in os.getenv("allowed_objects", "person").split(","))
 bot_token = os.getenv("bot_token", "bot_token does not exist")
 group_chat_id = os.getenv("group_chat_id", "group_chat_id does not exist")
 homedir = os.getenv("homedir", "/app/ftp")
@@ -17,9 +20,35 @@ class Telegram(FTPHandler):
     def on_file_received(self, file_path): # only if ftp server receives a file we will trigger a potential telegram notification
         send_to_telegram(file_path)
 
+def is_allowed_by_detection(file_path):
+    try:
+        with open(file_path, 'rb') as f:
+            files = {'file': f}
+            response = requests.post(detection_endpoint, files=files, timeout=120)
+            if response.status_code != 200:
+                print(f"Detection endpoint error: {response.status_code} - {response.text}")
+                return False
+
+            detections = response.json()
+            for detection in detections:
+                for obj in detection.get("objects", []):
+                    if obj.get("name", "").lower() in allowed_objects:
+                        print(f"Allowed object detected: {obj.get('name')}")
+                        return True
+            print("No allowed objects detected.")
+            print(f"Allowed object detected: {detections}")
+            return False
+    except Exception as e:
+        print(f"Error contacting detection endpoint: {e}")
+        return False
+
 
 def send_to_telegram(file_path):
     try:
+        if not is_allowed_by_detection(file_path):
+            os.remove(file_path)  # drop file if no allowed object detected
+            return
+
         if file_path.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.bmp', '.gif')):
             asyncio.run(telegram.Bot(bot_token).sendPhoto(chat_id=group_chat_id, photo=file_path)) # Send photo via Telegram
             os.remove(file_path)  # Delete the file after successful send
