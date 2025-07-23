@@ -8,6 +8,7 @@ import time
 from telegram.error import RetryAfter, TimedOut
 import requests
 import json
+from requests.exceptions import Timeout, ConnectionError, RequestException
 
 detection_endpoint = os.getenv("detection_endpoint", "")
 allowed_objects = set(o.strip().lower() for o in os.getenv("allowed_objects", "person").split(","))
@@ -37,11 +38,23 @@ def is_allowed_by_detection(file_path):
         with open(file_path, 'rb') as f:
             files = {'image': f}
             response = requests.post(detection_endpoint, files=files, timeout=120)
+
             if response.status_code != 200:
-                print(f"Detection endpoint error: {response.status_code} - {response.text}")
+                error_msg = f"Detection endpoint returned status {response.status_code}: {response.text}"
+                print(error_msg)
+                notify_telegram_error(error_msg)
+                send_to_telegram(file_path)
                 return False
 
-            detections = response.json()
+            try:
+                detections = response.json()
+            except json.JSONDecodeError as e:
+                error_msg = f"Failed to parse JSON from detection endpoint: {e}"
+                print(error_msg)
+                notify_telegram_error(error_msg)
+                send_to_telegram(file_path)
+                return False
+
             for detection in detections:
                 for obj in detection.get("objects", []):
                     if obj.get("name", "").lower() in allowed_objects:
@@ -51,10 +64,31 @@ def is_allowed_by_detection(file_path):
             print("No allowed objects detected.")
             print(f"DEBUG: {detections}")
             return False
+
+    except (Timeout, ConnectionError) as e:
+        error_msg = f"Network error contacting detection endpoint: {type(e).__name__} - {e}"
+        print(error_msg)
+        notify_telegram_error(error_msg)
+        send_to_telegram(file_path)
+        return False
+    except RequestException as e:
+        error_msg = f"Request error contacting detection endpoint: {e}"
+        print(error_msg)
+        notify_telegram_error(error_msg)
+        send_to_telegram(file_path)
+        return False
     except Exception as e:
-        print(f"Error contacting detection endpoint: {e}")
+        error_msg = f"Unexpected error during detection: {e}"
+        print(error_msg)
+        notify_telegram_error(error_msg)
+        send_to_telegram(file_path)
         return False
 
+def notify_telegram_error(message):
+    try:
+        asyncio.run(telegram.Bot(bot_token).send_message(chat_id=group_chat_id, text=f"❗ Detection error:\n{message}"))
+    except Exception as e:
+        print(f"Failed to send error notification to Telegram: {e}")
 
 def send_to_telegram(file_path):
     try:
