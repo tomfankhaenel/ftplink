@@ -12,6 +12,7 @@ from requests.exceptions import Timeout, ConnectionError, RequestException
 
 detection_endpoint = os.getenv("detection_endpoint", "")
 allowed_objects = set(o.strip().lower() for o in os.getenv("allowed_objects", "person").split(","))
+confidence_level = float(os.getenv("confidence_level", "0.65"))
 bot_token = os.getenv("bot_token", "bot_token does not exist")
 group_chat_id = os.getenv("group_chat_id", "group_chat_id does not exist")
 homedir = os.getenv("homedir", "/app/ftp")
@@ -57,10 +58,13 @@ def is_allowed_by_detection(file_path):
 
             for detection in detections:
                 for obj in detection.get("objects", []):
-                    if obj.get("name", "").lower() in allowed_objects:
-                        print(f"Allowed object detected: {obj.get('name')}")
+                    name = obj.get("name", "").lower()
+                    confidence = obj.get("confidence", 0.0)
+                    if name in allowed_objects and confidence >= confidence_level:
+                        print(f"Allowed object detected: {name} (confidence: {confidence:.2f})")
                         print(f"DEBUG: {detections}")
                         return True
+
             print("No allowed objects detected.")
             print(f"DEBUG: {detections}")
             return False
