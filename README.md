@@ -1,5 +1,9 @@
 ![](logo.png)
 
+> **AI disclosure:** Parts of this project (code, tests, CI/CD automation and
+> documentation) were created or assisted by AI tools. All changes are gated by
+> automated tests and a human is expected to review anything that fails.
+
 # Origin
 Imagine you have multiple surveillance cameras and want to know when something is moving or happening. 
 The cameras only offer builtin push notification for an app you dont want to use and the only other options are smtp and ftp uploads.
@@ -34,3 +38,14 @@ services:
 volumes:
   ftp:
 ```
+
+# Automation
+
+This repository is fully automated:
+
+- **Dependency updates** are opened by Renovate as Conventional-Commit pull requests.
+- **CI** (`.github/workflows/ci.yml`) runs the functional test suite (`src/test_ftp_server.py`) and a multi-arch Docker build on every PR.
+- **Auto-merge**: Renovate merges an update only when *all* CI checks are green. If a test breaks, the PR is left open and labelled for a human to review — it is never merged.
+- **Daily release** (`.github/workflows/release.yml`): once a day, if anything was merged since the last tag, a new release is created. The version is bumped major/minor/patch based on the merged commit messages, which then builds and pushes the image.
+
+Required repository secrets: `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`.

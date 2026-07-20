@@ -1,0 +1,52 @@
+name: CI
+
+# Runs on every pull request (this includes Renovate update PRs) and on pushes
+# to the automation branches. Renovate is configured with automerge, and it
+# will only merge a PR once ALL checks defined here are green. If the tests
+# start failing because an update broke functionality, the merge never happens
+# and the PR is left open (and labelled) for a human to inspect.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - 'renovate/**'
+      - 'feature/*'
+
+jobs:
+  test:
+    name: Functional tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        working-directory: src
+        run: pip install --no-cache-dir -r requirements.txt -r requirements-dev.txt
+      - name: Run tests
+        working-directory: src
+        run: python -m pytest -v
+
+  build:
+    name: Build Docker image (no push)
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build Docker image
+        uses: docker/build-push-action@v6.19.1
+        with:
+          context: src
+          file: src/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: ci-${{ github.sha }}

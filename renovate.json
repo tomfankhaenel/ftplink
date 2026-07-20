@@ -1,14 +1,37 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": [
+    "config:recommended",
+    ":semanticCommits"
+  ],
+  "automerge": true,
+  "automergeType": "pr",
+  "automergeStrategy": "squash",
+  "platformAutomerge": true,
+  "dependencyDashboard": true,
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "labels": ["security", "automerge"],
+    "automerge": true
+  },
   "packageRules": [
-      {
-        "matchUpdateTypes": ["minor"],
-        "automerge": true
-      },
     {
-      "matchUpdateTypes": ["patch"],
-      "enabled": false
+      "description": "Breaking / major updates produce a major version bump",
+      "matchUpdateTypes": ["major"],
+      "commitMessagePrefix": "feat(deps)!:",
+      "automerge": true
+    },
+    {
+      "description": "Minor updates produce a minor version bump",
+      "matchUpdateTypes": ["minor"],
+      "commitMessagePrefix": "feat(deps):",
+      "automerge": true
+    },
+    {
+      "description": "Patch/pin/digest updates produce a patch version bump",
+      "matchUpdateTypes": ["patch", "pin", "digest", "bump"],
+      "commitMessagePrefix": "fix(deps):",
+      "automerge": true
     }
-    ]
+  ]
 }

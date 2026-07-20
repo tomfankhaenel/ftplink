@@ -1,0 +1,105 @@
+name: Daily automated release
+
+# Once a day this workflow looks at everything that was merged into main since
+# the last release tag. If there is nothing new, it exits without doing
+# anything. If there are new commits it computes the next semantic version from
+# the commit messages (Renovate is configured to write Conventional Commits):
+#   * a commit with "feat(...)!:" or "BREAKING CHANGE" -> major bump
+#   * a commit starting with "feat"                    -> minor bump
+#   * anything else (fix, chore, ...)                  -> patch bump
+# It then creates the Git tag + GitHub release and builds/pushes the image.
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  version:
+    name: Determine next version
+    runs-on: ubuntu-latest
+    outputs:
+      should_release: ${{ steps.bump.outputs.should_release }}
+      new_version: ${{ steps.bump.outputs.new_version }}
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Compute next semantic version
+        id: bump
+        run: |
+          set -euo pipefail
+          last_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$last_tag" ]; then
+            echo "No previous tag found, starting from 0.0.0"
+            last_tag="0.0.0"
+            range=""
+          else
+            range="${last_tag}..HEAD"
+          fi
+
+          if [ -n "$range" ]; then
+            commits=$(git log --format='%s%n%b' "$range")
+          else
+            commits=$(git log --format='%s%n%b')
+          fi
+
+          if [ -z "$(git log --format='%H' ${range:+$range})" ]; then
+            echo "No new commits since ${last_tag}; skipping release."
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          base_version="${last_tag#v}"
+          major=$(echo "$base_version" | cut -d. -f1)
+          minor=$(echo "$base_version" | cut -d. -f2)
+          patch=$(echo "$base_version" | cut -d. -f3)
+          major=${major:-0}; minor=${minor:-0}; patch=${patch:-0}
+
+          level="patch"
+          if echo "$commits" | grep -qiE '(^|[[:space:]])BREAKING CHANGE' \
+             || echo "$commits" | grep -qE '^[a-zA-Z]+(\([^)]*\))?!:'; then
+            level="major"
+          elif echo "$commits" | grep -qE '^feat(\([^)]*\))?:'; then
+            level="minor"
+          fi
+
+          case "$level" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+
+          new_version="${major}.${minor}.${patch}"
+          echo "Bump level: $level -> new version: $new_version"
+          echo "should_release=true" >> "$GITHUB_OUTPUT"
+          echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
+
+  create-release:
+    name: Create GitHub release
+    needs: version
+    if: needs.version.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ needs.version.outputs.new_version }}" \
+            --generate-notes \
+            --title "${{ needs.version.outputs.new_version }}"
+
+  build:
+    name: Build and push released image
+    needs: [version, create-release]
+    if: needs.version.outputs.should_release == 'true'
+    uses: ./.github/workflows/build-and-push.yml
+    secrets: inherit
