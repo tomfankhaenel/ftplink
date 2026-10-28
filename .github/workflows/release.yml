@@ -102,4 +102,6 @@ jobs:
     needs: [version, create-release]
     if: needs.version.outputs.should_release == 'true'
     uses: ./.github/workflows/build-and-push.yml
+    with:
+      version: ${{ needs.version.outputs.new_version }}
     secrets: inherit

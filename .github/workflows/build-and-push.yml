@@ -26,6 +26,9 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: tomfankhaenel/ftplink
+          tags: |
+            type=semver,pattern={{version}},value=${{ inputs.version }}
+            type=raw,value=latest
       - name: Build and push Docker image
         uses: docker/build-push-action@v7.4.0
         with:
